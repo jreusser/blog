@@ -34,3 +34,7 @@ Markdown image links like `![alt](image.png)` will resolve via the backend at:
 API:
 - `GET /api/posts`
 - `GET /api/posts/{post_id}`
+
+Cache:
+- The backend caches the computed index for 1 hour in-memory.
+- It also auto-invalidates the index cache when the mounted content directory changes.

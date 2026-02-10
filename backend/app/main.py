@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from .content_index import TTLCache, build_index, load_post
+from .content_index import ContentAwareTTLCache, build_index, compute_content_state, load_post
 
 
 CONTENT_DIR = Path(os.environ.get("BLOG_CONTENT_DIR", "/content")).resolve()
@@ -23,7 +23,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-index_cache = TTLCache(ttl_seconds=CACHE_SECONDS)
+index_cache = ContentAwareTTLCache(ttl_seconds=CACHE_SECONDS)
 
 # Serve images and other assets from the content directory
 # URLs in markdown like ![alt](image.png) can be resolved client-side to:
@@ -33,12 +33,13 @@ app.mount("/content", StaticFiles(directory=str(CONTENT_DIR), html=False), name=
 
 @app.get("/api/posts")
 def get_posts():
-    cached = index_cache.get()
+    state = compute_content_state(CONTENT_DIR)
+    cached = index_cache.get(state)
     if cached is not None:
         return cached
 
     data = build_index(CONTENT_DIR)
-    index_cache.set(data)
+    index_cache.set(data, state)
     return data
 
 

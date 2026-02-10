@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import time
 from dataclasses import dataclass
 from pathlib import Path
@@ -124,4 +123,70 @@ class TTLCache:
 
     def clear(self) -> None:
         self._value = None
+        self._expires_at = 0.0
+
+
+def compute_content_state(content_root: Path) -> float:
+    """Return a cheap fingerprint for the content tree.
+
+    Uses the maximum mtime across expected content files/directories so that
+    adding/editing/removing a post (or its assets) invalidates the cache.
+    """
+    content_root = content_root.resolve()
+    if not content_root.exists():
+        return 0.0
+
+    max_mtime = 0.0
+
+    def bump(path: Path) -> None:
+        nonlocal max_mtime
+        try:
+            stat = path.stat()
+        except OSError:
+            return
+        if stat.st_mtime > max_mtime:
+            max_mtime = stat.st_mtime
+
+    bump(content_root)
+
+    for year_dir in [p for p in content_root.iterdir() if p.is_dir()]:
+        bump(year_dir)
+        for month_dir in [p for p in year_dir.iterdir() if p.is_dir()]:
+            bump(month_dir)
+            for day_dir in [p for p in month_dir.iterdir() if p.is_dir()]:
+                bump(day_dir)
+                for entry_dir in [p for p in day_dir.iterdir() if p.is_dir()]:
+                    bump(entry_dir)
+                    # include all files in the entry dir (markdown + images)
+                    for child in [p for p in entry_dir.iterdir() if p.is_file()]:
+                        bump(child)
+
+    return max_mtime
+
+
+class ContentAwareTTLCache:
+    def __init__(self, ttl_seconds: int):
+        self.ttl_seconds = ttl_seconds
+        self._expires_at: float = 0.0
+        self._value: Any | None = None
+        self._state: float | None = None
+
+    def get(self, state: float) -> Any | None:
+        now = time.time()
+        if self._value is None:
+            return None
+        if now >= self._expires_at:
+            return None
+        if self._state != state:
+            return None
+        return self._value
+
+    def set(self, value: Any, state: float) -> None:
+        self._value = value
+        self._state = state
+        self._expires_at = time.time() + self.ttl_seconds
+
+    def clear(self) -> None:
+        self._value = None
+        self._state = None
         self._expires_at = 0.0
