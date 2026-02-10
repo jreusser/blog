@@ -2,10 +2,17 @@ export type PostSummary = {
   id: string;
   title: string;
   date_path: string;
+  tags: string[];
+};
+
+export type TagSummary = {
+  tag: string;
+  count: number;
 };
 
 export type PostIndexResponse = {
   posts: PostSummary[];
+  tags: TagSummary[];
 };
 
 export type PostDetail = {

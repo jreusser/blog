@@ -3,6 +3,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass
 from pathlib import Path
+import re
 from typing import Any
 
 
@@ -11,6 +12,7 @@ class PostSummary:
     id: str
     title: str
     date_path: str  # e.g. 2026/February/10
+    tags: list[str]
 
 
 @dataclass(frozen=True)
@@ -44,12 +46,35 @@ def _extract_title(md_text: str, fallback: str) -> str:
     return fallback
 
 
+_HASHTAG_RE = re.compile(r"(?<![A-Za-z0-9_])#([A-Za-z0-9_]+(?:-[A-Za-z0-9_]+)*)")
+
+
+def extract_hashtags(md_text: str) -> list[str]:
+    """Extract hashtags from markdown using a Twitter-like rule.
+
+    Examples:
+    - '#this-is-fine' -> 'this-is-fine'
+    - '#this is fine' -> 'this'
+    """
+    tags = [m.group(1).lower() for m in _HASHTAG_RE.finditer(md_text)]
+    # unique, stable order
+    seen: set[str] = set()
+    out: list[str] = []
+    for t in tags:
+        if t in seen:
+            continue
+        seen.add(t)
+        out.append(t)
+    return out
+
+
 def build_index(content_root: Path) -> dict[str, Any]:
     content_root = content_root.resolve()
     if not content_root.exists():
         return {"posts": []}
 
     posts: list[PostSummary] = []
+    tag_counts: dict[str, int] = {}
 
     # Expect pattern like: <root>/2026/February/10/<entry-folder>/(single .md)
     for year_dir in sorted([p for p in content_root.iterdir() if p.is_dir()]):
@@ -68,12 +93,18 @@ def build_index(content_root: Path) -> dict[str, Any]:
                         continue
                     post_id = _safe_rel_id(content_root, entry_dir)
                     title = _extract_title(md_text, fallback=entry_dir.name)
-                    posts.append(PostSummary(id=post_id, title=title, date_path=date_path))
+                    tags = extract_hashtags(md_text)
+                    posts.append(PostSummary(id=post_id, title=title, date_path=date_path, tags=tags))
+                    for tag in tags:
+                        tag_counts[tag] = tag_counts.get(tag, 0) + 1
 
     # Newest first by date_path then title (lexicographic works with zero-padded day if desired)
     posts.sort(key=lambda p: (p.date_path, p.title), reverse=True)
 
-    return {"posts": [p.__dict__ for p in posts]}
+    tags = [{"tag": t, "count": c} for t, c in tag_counts.items()]
+    tags.sort(key=lambda x: (-x["count"], x["tag"]))
+
+    return {"posts": [p.__dict__ for p in posts], "tags": tags}
 
 
 def load_post(content_root: Path, post_id: str) -> PostDetail | None:

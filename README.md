@@ -21,6 +21,11 @@ Rules:
 - Exactly **one** `.md` file per entry folder.
 - Images can live alongside the `.md` file.
 
+Hashtags:
+- Use Twitter-like hashtags in markdown content, e.g. `#this-is-fine`.
+- `#this is fine` is interpreted as the tag `this`.
+- The blog home page shows aggregated hashtag counts; clicking a hashtag filters posts.
+
 Markdown image links like `![alt](image.png)` will resolve via the backend at:
 
 `/content/<post_id>/image.png`
