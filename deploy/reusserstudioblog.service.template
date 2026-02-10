@@ -1,0 +1,16 @@
+[Unit]
+Description=Reusser Studio Blog (Docker Compose)
+Wants=network-online.target
+After=network-online.target docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=__APP_DIR__
+ExecStart=__DOCKER_BIN__ compose up -d
+ExecStop=__DOCKER_BIN__ compose down
+TimeoutStartSec=0
+
+[Install]
+WantedBy=multi-user.target

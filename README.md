@@ -28,8 +28,16 @@ Markdown image links like `![alt](image.png)` will resolve via the backend at:
 ## Run
 
 - `docker compose up --build`
-- Frontend: http://localhost:8080
+- Frontend: http://localhost:8088
 - Backend: http://localhost:8000
+
+## Install as a systemd service (server boot)
+
+This installs a unit that runs `docker compose up -d` on boot.
+
+- `sudo bash install.sh`
+- Check status: `systemctl status reusserstudioblog.service`
+- Logs: `journalctl -u reusserstudioblog.service -e`
 
 API:
 - `GET /api/posts`
