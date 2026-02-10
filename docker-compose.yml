@@ -1,0 +1,20 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    environment:
+      - BLOG_CONTENT_DIR=/content
+      - BLOG_CACHE_SECONDS=3600
+      - BLOG_CORS_ORIGIN=*
+    volumes:
+      - ./blog-content:/content:ro
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+    depends_on:
+      - backend
+    ports:
+      - "8088:80"
