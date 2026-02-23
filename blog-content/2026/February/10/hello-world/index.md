@@ -41,3 +41,8 @@ The highly stylized stylized flame icon in the center represents the digital par
 The R and C stand for "Reusser Ceramics"
 
 I have a dream of one day selling my forms in stores across the nation. 
+
+I also have a dream of not having to "work" for my daily bread, but that's a laugh. 
+I'd rather work at something I love. 
+
+But what _do_ I love?
